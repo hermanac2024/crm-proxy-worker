@@ -1,7 +1,7 @@
 export default {
   async fetch(request, env, ctx) {
-    const primaryBackend = 'https://cpranking.linkscdn.net';
-    const backupBackend = 'https://cpranking.linkscdn.net';
+    const primaryBackend = 'https://me.camarketscn.net';
+    const backupBackend = 'https://me.camarketscn.net';
     const originalUrl = new URL(request.url);
     const tryBackends = [primaryBackend, backupBackend];
 
