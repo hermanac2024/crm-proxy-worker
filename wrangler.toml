@@ -1,0 +1,5 @@
+name = "cpranking-proxy-worker"
+main = "index.js"  # <-- this should match your JS file name
+compatibility_date = "2025-06-20"
+
+# Optional: if you're using modules syntax (which you are, since you use 'export default')
