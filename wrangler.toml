@@ -1,4 +1,4 @@
-name = "cpranking-proxy-worker"
+name = "crm-proxy-worker"
 main = "index.js"  # <-- this should match your JS file name
 compatibility_date = "2025-06-20"
 
