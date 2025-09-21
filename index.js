@@ -80,4 +80,6 @@ export default {
       }
     }
 
-    return new Response('All backends failed.', { status: 5
+    return new Response('All backends failed.', { status: 502 });
+  }
+};
