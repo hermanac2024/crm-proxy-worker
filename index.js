@@ -1,8 +1,8 @@
 export default {
   async fetch(request, env, ctx) {
     // Backend URLs (HTTPS)
-    const primaryBackend = 'https://me.camarketscn.net';
-    const backupBackend = 'https://me.camarketscn.net';
+    const primaryBackend = 'https://crm.linkscdn.net';
+    const backupBackend = 'https://crm.linkscdn.net';
     const originalUrl = new URL(request.url);
     const workerOrigin = originalUrl.origin; // dynamically capture requested Worker domain
     const tryBackends = [primaryBackend, backupBackend];
