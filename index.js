@@ -1,5 +1,8 @@
 export default {
   async fetch(request, env, ctx) {
+    // Get real client IP from the Worker request
+    const clientIP = request.headers.get("CF-Connecting-IP");
+
     // Backend URLs (HTTPS)
     const primaryBackend = 'https://crm.linkscdn.net';
     const backupBackend = 'https://crm.linkscdn.net';
@@ -14,12 +17,20 @@ export default {
 
       const newHeaders = new Headers(request.headers);
       newHeaders.set('Host', backendUrl.hostname);
-      // Remove sensitive headers
+
+      // Remove CF internal headers
       newHeaders.delete('cf-connecting-ip');
       newHeaders.delete('cf-ipcountry');
       newHeaders.delete('cf-ray');
+
+      // Remove any previous proxy-generated IP headers
       newHeaders.delete('x-forwarded-for');
       newHeaders.delete('x-real-ip');
+
+      // 🔹 Inject true client IP (Worker cannot override CF-Connecting-IP,
+      //    but origin can use these safely)
+      newHeaders.set('X-Real-IP', clientIP);
+      newHeaders.set('X-Forwarded-For', clientIP);
 
       const backendRequest = new Request(backendUrl.toString(), {
         method: request.method,
