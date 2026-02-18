@@ -106,6 +106,11 @@ export default {
     backendUrl.search = url.search;
 
     const headers = new Headers(request.headers);
+    
+    const clientIP = request.headers.get("CF-Connecting-IP");
+    headers.set("CF-Connecting-IP", clientIP);
+    headers.set("X-Forwarded-For", clientIP);
+    headers.set("X-Real-IP", clientIP);
 
     // Preserve original host context
     headers.set("Host", backendUrl.hostname);
