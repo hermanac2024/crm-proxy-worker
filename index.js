@@ -178,6 +178,7 @@ export default {
     headers.delete("x-real-ip");
 
     if (clientIP) {
+      headers.set("CF-Connecting-IP", clientIP);
       headers.set("X-Forwarded-For", clientIP);
       headers.set("X-Real-IP", clientIP);
     }
