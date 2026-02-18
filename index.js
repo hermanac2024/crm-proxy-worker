@@ -1,3 +1,4 @@
+//v1
 // export default {
 //   async fetch(request, env, ctx) {
 //     // Get real client IP from the Worker request
@@ -94,7 +95,7 @@
 //     return new Response('All backends failed.', { status: 502 });
 //   }
 // };
-
+//v2
 // export default {
 //   async fetch(request) {
 
