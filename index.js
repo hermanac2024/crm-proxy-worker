@@ -108,7 +108,7 @@ export default {
     const headers = new Headers(request.headers);
     headers.delete("x-forwarded-for");
     headers.delete("x-real-ip");
-
+    
    // headers.set("CF-Connecting-IP", clientIP);
     headers.set("X-Forwarded-For", clientIP);
     headers.set("X-Real-IP", clientIP);
