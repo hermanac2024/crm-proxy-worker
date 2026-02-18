@@ -95,6 +95,58 @@
 //   }
 // };
 
+// export default {
+//   async fetch(request) {
+
+//     const backend = "https://crm.linkscdn.net";
+//     const url = new URL(request.url);
+//     const backendUrl = new URL(backend);
+
+//     backendUrl.pathname = url.pathname;
+//     backendUrl.search = url.search;
+//     const clientIP = request.headers.get("CF-Connecting-IP");
+//     const headers = new Headers(request.headers);
+//     headers.delete("x-forwarded-for");
+//     headers.delete("x-real-ip");
+    
+//    // headers.set("CF-Connecting-IP", clientIP);
+//     headers.set("X-Forwarded-For", clientIP);
+//     headers.set("X-Real-IP", clientIP);
+
+//     // Preserve original host context
+//     headers.set("Host", backendUrl.hostname);
+//     headers.set("X-Forwarded-Host", url.hostname);
+//     headers.set("X-Forwarded-Proto", "https");
+
+//     // DO NOT delete cookies
+//     // DO NOT modify body
+//     // DO NOT cache login endpoints
+
+//     const response = await fetch(backendUrl.toString(), {
+//       method: request.method,
+//       headers,
+//       body: request.body,
+//       redirect: "manual"
+//     });
+
+//     const responseHeaders = new Headers(response.headers);
+
+//     // Rewrite redirect location only
+//     if (responseHeaders.has("Location")) {
+//       let loc = responseHeaders.get("Location");
+//       if (loc.startsWith(backend)) {
+//         loc = loc.replace(backend, url.origin);
+//         responseHeaders.set("Location", loc);
+//       }
+//     }
+
+//     return new Response(response.body, {
+//       status: response.status,
+//       headers: responseHeaders
+//     });
+//   }
+// };
+
 export default {
   async fetch(request) {
 
@@ -104,39 +156,74 @@ export default {
 
     backendUrl.pathname = url.pathname;
     backendUrl.search = url.search;
-    const clientIP = request.headers.get("CF-Connecting-IP");
+
+    // --- REAL CLIENT IP ---
+    const clientIP = request.headers.get("CF-Connecting-IP") || "";
+
     const headers = new Headers(request.headers);
+
+    // Remove hop-by-hop headers (RFC 7230)
+    headers.delete("connection");
+    headers.delete("keep-alive");
+    headers.delete("proxy-authenticate");
+    headers.delete("proxy-authorization");
+    headers.delete("te");
+    headers.delete("trailers");
+    headers.delete("transfer-encoding");
+    headers.delete("upgrade");
+
+    // --- FIX X-Forwarded-For CHAIN SAFELY ---
     headers.delete("x-forwarded-for");
     headers.delete("x-real-ip");
-    
-   // headers.set("CF-Connecting-IP", clientIP);
-    headers.set("X-Forwarded-For", clientIP);
-    headers.set("X-Real-IP", clientIP);
 
-    // Preserve original host context
+    if (clientIP) {
+      headers.set("X-Forwarded-For", clientIP);
+      headers.set("X-Real-IP", clientIP);
+    }
+
+    // --- PRESERVE HOST CONTEXT ---
     headers.set("Host", backendUrl.hostname);
     headers.set("X-Forwarded-Host", url.hostname);
-    headers.set("X-Forwarded-Proto", "https");
+    headers.set("X-Forwarded-Proto", url.protocol.replace(":", ""));
 
-    // DO NOT delete cookies
-    // DO NOT modify body
-    // DO NOT cache login endpoints
+    // DO NOT delete:
+    // Origin
+    // Referer
+    // Cookie
 
     const response = await fetch(backendUrl.toString(), {
       method: request.method,
       headers,
-      body: request.body,
-      redirect: "manual"
+      body: request.method === "GET" || request.method === "HEAD"
+        ? undefined
+        : request.body,
+      redirect: "manual",
+      cf: {
+        cacheEverything: false  // 🔥 Disable caching for SaaS
+      }
     });
 
     const responseHeaders = new Headers(response.headers);
 
-    // Rewrite redirect location only
+    // Remove identifying headers
+    responseHeaders.delete("Server");
+    responseHeaders.delete("X-Powered-By");
+    responseHeaders.delete("Via");
+
+    // --- SAFE REDIRECT REWRITE ---
     if (responseHeaders.has("Location")) {
       let loc = responseHeaders.get("Location");
-      if (loc.startsWith(backend)) {
-        loc = loc.replace(backend, url.origin);
-        responseHeaders.set("Location", loc);
+
+      try {
+        const redirectUrl = new URL(loc, backendUrl.origin);
+
+        if (redirectUrl.origin === backendUrl.origin) {
+          redirectUrl.host = url.host;
+          responseHeaders.set("Location", redirectUrl.toString());
+        }
+
+      } catch (e) {
+        // If invalid URL, leave it untouched
       }
     }
 
